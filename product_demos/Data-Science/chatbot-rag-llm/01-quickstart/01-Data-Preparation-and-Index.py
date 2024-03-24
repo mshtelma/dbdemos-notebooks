@@ -24,12 +24,6 @@
 
 # COMMAND ----------
 
-# DBTITLE 1,Install required external libraries 
-# MAGIC %pip install mlflow==2.10.1 lxml==4.9.3 transformers==4.30.2 langchain==0.1.5 databricks-vectorsearch==0.22
-# MAGIC dbutils.library.restartPython()
-
-# COMMAND ----------
-
 # DBTITLE 1,Init our resources and catalog
 # MAGIC %run ../_resources/00-init $reset_all_data=false
 
@@ -224,8 +218,8 @@ import mlflow.deployments
 deploy_client = mlflow.deployments.get_deploy_client("databricks")
 
 #Embeddings endpoints convert text into a vector (array of float). Here is an example using BGE:
-response = deploy_client.predict(endpoint="databricks-bge-large-en", inputs={"input": ["What is Apache Spark?"]})
-embeddings = [e['embedding'] for e in response.data]
+response = deploy_client.predict(endpoint=EMBEDDING_ENDPOINT, inputs={"inputs": ["What is Apache Spark?"]})
+embeddings = [e for e in response["predictions"]]
 print(embeddings)
 
 # COMMAND ----------
@@ -294,7 +288,7 @@ if not index_exists(vsc, VECTOR_SEARCH_ENDPOINT_NAME, vs_index_fullname):
     pipeline_type="TRIGGERED",
     primary_key="id",
     embedding_source_column='content', #The column containing our text
-    embedding_model_endpoint_name='databricks-bge-large-en' #The embedding endpoint used to create the embeddings
+    embedding_model_endpoint_name=EMBEDDING_ENDPOINT #The embedding endpoint used to create the embeddings
   )
   #Let's wait for the index to be ready and all our embeddings to be created and indexed
   wait_for_index_to_be_ready(vsc, VECTOR_SEARCH_ENDPOINT_NAME, vs_index_fullname)
@@ -342,3 +336,7 @@ docs
 # MAGIC This simplifies and accelerates your data projects so that you can focus on the next step: creating your real-time chatbot endpoint with well-crafted prompt augmentation.
 # MAGIC
 # MAGIC Open the [02-Deploy-RAG-Chatbot-Model]($./02-Deploy-RAG-Chatbot-Model) notebook to create and deploy a chatbot endpoint.
+
+# COMMAND ----------
+
+

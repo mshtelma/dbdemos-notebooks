@@ -20,9 +20,9 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install mlflow==2.10.1 lxml==4.9.3 langchain==0.1.5 databricks-vectorsearch==0.22 cloudpickle==2.2.1 databricks-sdk==0.18.0 cloudpickle==2.2.1 pydantic==2.5.2
-# MAGIC %pip install pip mlflow[databricks]==2.10.1
-# MAGIC dbutils.library.restartPython()
+#%pip install mlflow==2.10.1 lxml==4.9.3 langchain==0.1.5 databricks-vectorsearch==0.22 cloudpickle==2.2.1 databricks-sdk==0.18.0 cloudpickle==2.2.1 pydantic==2.5.2
+#%pip install pip mlflow[databricks]==2.10.1
+dbutils.library.restartPython()
 
 # COMMAND ----------
 
@@ -45,7 +45,7 @@ prompt = PromptTemplate(
   input_variables = ["question"],
   template = "You are an assistant. Give a short answer to this question: {question}"
 )
-chat_model = ChatDatabricks(endpoint="databricks-llama-2-70b-chat", max_tokens = 500)
+chat_model = ChatDatabricks(endpoint=LLM_ENDPOINT, max_tokens = 500)
 
 chain = (
   prompt
@@ -130,7 +130,7 @@ print(chain_with_history.invoke({
 
 # COMMAND ----------
 
-chat_model = ChatDatabricks(endpoint="databricks-llama-2-70b-chat", max_tokens = 200)
+chat_model = ChatDatabricks(endpoint=LLM_ENDPOINT, max_tokens = 200)
 
 is_question_about_databricks_str = """
 You are classifying documents to know if this question is related with Databricks in AWS, Azure and GCP, Workspaces, Databricks account and cloud infrastructure setup, Data Science, Data Engineering, Big Data, Datawarehousing, SQL, Python and Scala or something from a very different field. Also answer no if the last part is inappropriate. 
@@ -203,7 +203,7 @@ index_name=f"{catalog}.{db}.databricks_pdf_documentation_self_managed_vs_index"
 host = "https://" + spark.conf.get("spark.databricks.workspaceUrl")
 
 #Let's make sure the secret is properly setup and can access our vector search index. Check the quick-start demo for more guidance
-test_demo_permissions(host, secret_scope="dbdemos", secret_key="rag_sp_token", vs_endpoint_name=VECTOR_SEARCH_ENDPOINT_NAME, index_name=index_name, embedding_endpoint_name="databricks-bge-large-en", managed_embeddings = False)
+test_demo_permissions(host, secret_scope=SECRET_SCOPE, secret_key=SECRET_NAME, vs_endpoint_name=VECTOR_SEARCH_ENDPOINT_NAME, index_name=index_name, embedding_endpoint_name=EMBEDDING_ENDPOINT, managed_embeddings = False)
 
 # COMMAND ----------
 
@@ -212,9 +212,9 @@ from langchain_community.vectorstores import DatabricksVectorSearch
 from langchain_community.embeddings import DatabricksEmbeddings
 from langchain.chains import RetrievalQA
 
-os.environ['DATABRICKS_TOKEN'] = dbutils.secrets.get("dbdemos", "rag_sp_token")
+os.environ['DATABRICKS_TOKEN'] = dbutils.secrets.get(SECRET_SCOPE, SECRET_NAME)
 
-embedding_model = DatabricksEmbeddings(endpoint="databricks-bge-large-en")
+embedding_model = DatabricksEmbeddingsV1(endpoint=EMBEDDING_ENDPOINT)
 
 def get_retriever(persist_dir: str = None):
     os.environ["DATABRICKS_HOST"] = host

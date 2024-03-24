@@ -13,12 +13,20 @@ VECTOR_SEARCH_ENDPOINT_NAME="dbdemos_vs_endpoint"
 
 DATABRICKS_SITEMAP_URL = "https://docs.databricks.com/en/doc-sitemap.xml"
 
-catalog = "main__build"
+catalog = "databricks_demos"
 
-#email = spark.sql('select current_user() as user').collect()[0]['user']
-#username = email.split('@')[0].replace('.', '_')
-#dbName = db = f"rag_chatbot_{username}"
-dbName = db = "rag_chatbot"
+email = spark.sql('select current_user() as user').collect()[0]['user']
+username = email.split('@')[0].replace('.', '_')
+dbName = db = f"rag_chatbot_{username}"
+
+
+# COMMAND ----------
+
+EMBEDDING_ENDPOINT = "bge_large_en_v1_5"
+LLM_ENDPOINT = "mixtral_8x7b_instruct"
+
+SECRET_SCOPE = "msh"
+SECRET_NAME = "db_token"
 
 # COMMAND ----------
 

@@ -29,12 +29,6 @@
 
 # COMMAND ----------
 
-# DBTITLE 1,Install the required libraries
-# MAGIC %pip install mlflow==2.10.1 langchain==0.1.5 databricks-vectorsearch==0.22 databricks-sdk==0.18.0 mlflow[databricks]
-# MAGIC dbutils.library.restartPython()
-
-# COMMAND ----------
-
 # MAGIC %run ../_resources/00-init $reset_all_data=false
 
 # COMMAND ----------
@@ -71,7 +65,7 @@
 index_name=f"{catalog}.{db}.databricks_documentation_vs_index"
 host = "https://" + spark.conf.get("spark.databricks.workspaceUrl")
 
-test_demo_permissions(host, secret_scope="dbdemos", secret_key="rag_sp_token", vs_endpoint_name=VECTOR_SEARCH_ENDPOINT_NAME, index_name=index_name, embedding_endpoint_name="databricks-bge-large-en")
+test_demo_permissions(host, secret_scope=SECRET_SCOPE, secret_key=SECRET_NAME, vs_endpoint_name=VECTOR_SEARCH_ENDPOINT_NAME, index_name=index_name, embedding_endpoint_name=EMBEDDING_ENDPOINT)
 
 # COMMAND ----------
 
@@ -94,17 +88,16 @@ test_demo_permissions(host, secret_scope="dbdemos", secret_key="rag_sp_token", v
 # DBTITLE 1,Setup authentication for our model
 # url used to send the request to your model from the serverless endpoint
 host = "https://" + spark.conf.get("spark.databricks.workspaceUrl")
-os.environ['DATABRICKS_TOKEN'] = dbutils.secrets.get("dbdemos", "rag_sp_token")
+os.environ['DATABRICKS_TOKEN'] = dbutils.secrets.get(SECRET_SCOPE, SECRET_NAME)
 
 # COMMAND ----------
 
 from databricks.vector_search.client import VectorSearchClient
 from langchain_community.vectorstores import DatabricksVectorSearch
-from langchain_community.embeddings import DatabricksEmbeddings
 
 # Test embedding Langchain model
 #NOTE: your question embedding model must match the one used in the chunk in the previous model 
-embedding_model = DatabricksEmbeddings(endpoint="databricks-bge-large-en")
+embedding_model = DatabricksEmbeddingsV1(endpoint=EMBEDDING_ENDPOINT)
 print(f"Test embeddings: {embedding_model.embed_query('What is Apache Spark?')[:20]}...")
 
 def get_retriever(persist_dir: str = None):
@@ -149,7 +142,7 @@ print(f"Relevant documents: {similar_documents[0]}")
 
 # Test Databricks Foundation LLM model
 from langchain_community.chat_models import ChatDatabricks
-chat_model = ChatDatabricks(endpoint="databricks-llama-2-70b-chat", max_tokens = 200)
+chat_model = ChatDatabricks(endpoint=LLM_ENDPOINT, max_tokens = 200)
 print(f"Test chat model: {chat_model.predict('What is Apache Spark')}")
 
 # COMMAND ----------
@@ -249,6 +242,10 @@ with mlflow.start_run(run_name="dbdemos_chatbot_rag") as run:
 
 # COMMAND ----------
 
+f"{{{{secrets/{SECRET_SCOPE}/{SECRET_NAME}}}}}"
+
+# COMMAND ----------
+
 # Create or update serving endpoint
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.serving import EndpointCoreConfigInput, ServedModelInput, ServedModelInputWorkloadSize
@@ -266,7 +263,7 @@ endpoint_config = EndpointCoreConfigInput(
             workload_size=ServedModelInputWorkloadSize.SMALL,
             scale_to_zero_enabled=True,
             environment_vars={
-                "DATABRICKS_TOKEN": "{{secrets/dbdemos/rag_sp_token}}",  # <scope>/<secret> that contains an access token
+                "DATABRICKS_TOKEN": f"{{{{secrets/{SECRET_SCOPE}/{SECRET_NAME}}}}}",  # <scope>/<secret> that contains an access token
             }
         )
     ]
