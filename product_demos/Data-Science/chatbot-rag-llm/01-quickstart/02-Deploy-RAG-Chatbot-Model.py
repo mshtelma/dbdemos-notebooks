@@ -242,10 +242,6 @@ with mlflow.start_run(run_name="dbdemos_chatbot_rag") as run:
 
 # COMMAND ----------
 
-f"{{{{secrets/{SECRET_SCOPE}/{SECRET_NAME}}}}}"
-
-# COMMAND ----------
-
 # Create or update serving endpoint
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.serving import EndpointCoreConfigInput, ServedModelInput, ServedModelInputWorkloadSize
