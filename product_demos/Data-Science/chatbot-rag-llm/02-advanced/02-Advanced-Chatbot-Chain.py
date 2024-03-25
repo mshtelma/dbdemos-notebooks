@@ -485,3 +485,7 @@ model.invoke(dialog)
 # MAGIC To solve these issue, we need a repeatable way of testing our model answer as part of our LLMOps deployment!
 # MAGIC
 # MAGIC Open the next [03-Offline-Evaluation]($./03-Offline-Evaluation) notebook to discover how to evaluate your model.
+
+# COMMAND ----------
+
+
