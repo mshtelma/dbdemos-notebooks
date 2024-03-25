@@ -9,7 +9,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install mlflow==2.10.1 lxml==4.9.3 transformers==4.30.2 langchain==0.1.5 databricks-vectorsearch==0.22
+# MAGIC %pip install mlflow[databricks]==2.11.3 langchain==0.1.13 databricks-vectorsearch==0.25 databricks-sdk==0.23.0 SQLAlchemy==2.0.29 pydantic==2.6.4
 # MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
@@ -457,3 +457,86 @@ def table_exists(table_name):
     except:
         return False
     return True
+
+# COMMAND ----------
+
+from typing import Any, Dict, Iterator, List
+from urllib.parse import urlparse
+
+from langchain_core.embeddings import Embeddings
+from langchain_core.pydantic_v1 import BaseModel, PrivateAttr
+
+def _chunk(texts: List[str], size: int) -> Iterator[List[str]]:
+    for i in range(0, len(texts), size):
+        yield texts[i : i + size]
+
+class DatabricksEmbeddingsV1(Embeddings, BaseModel):
+    """Embedding LLMs in MLflow.
+
+    To use, you should have the `mlflow[genai]` python package installed.
+    For more information, see https://mlflow.org/docs/latest/llms/deployments.
+
+    Example:
+        .. code-block:: python
+
+            from langchain_community.embeddings import MlflowEmbeddings
+
+            embeddings = MlflowEmbeddings(
+                target_uri="http://localhost:5000",
+                endpoint="embeddings",
+            )
+    """
+
+    endpoint: str
+    """The endpoint to use."""
+    target_uri: str = "databricks"
+    """The target URI to use."""
+    _client: Any = PrivateAttr()
+    """The parameters to use for queries."""
+    query_params: Dict[str, str] = {}
+    """The parameters to use for documents."""
+    documents_params: Dict[str, str] = {}
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+        self._validate_uri()
+        try:
+            from mlflow.deployments import get_deploy_client
+
+            self._client = get_deploy_client(self.target_uri)
+        except ImportError as e:
+            raise ImportError(
+                "Failed to create the client. "
+                f"Please run `pip install mlflow{self._mlflow_extras}` to install "
+                "required dependencies."
+            ) from e
+
+    @property
+    def _mlflow_extras(self) -> str:
+        return "[genai]"
+
+    def _validate_uri(self) -> None:
+        if self.target_uri == "databricks":
+            return
+        allowed = ["http", "https", "databricks"]
+        if urlparse(self.target_uri).scheme not in allowed:
+            raise ValueError(
+                f"Invalid target URI: {self.target_uri}. "
+                f"The scheme must be one of {allowed}."
+            )
+
+    def embed(self, texts: List[str], params: Dict[str, str]) -> List[List[float]]:
+        embeddings: List[List[float]] = []
+        for txt in _chunk(texts, 20):
+            resp = self._client.predict(
+                endpoint=self.endpoint,
+                inputs={"inputs": txt, **params},  # type: ignore[arg-type]
+            )
+            embeddings.extend(e for e in resp["predictions"])
+        return embeddings
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        return self.embed(texts, params=self.documents_params)
+
+    def embed_query(self, text: str) -> List[float]:
+        return self.embed([text], params=self.query_params)[0]

@@ -24,8 +24,9 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install databricks-sdk==0.12.0 mlflow==2.10.1 textstat==0.7.3 tiktoken==0.5.1 evaluate==0.4.1 langchain==0.1.5 databricks-vectorsearch==0.22 transformers==4.30.2 torch==2.0.1 cloudpickle==2.2.1 pydantic==2.5.2
-# MAGIC dbutils.library.restartPython()
+#%pip install databricks-sdk==0.12.0 mlflow==2.10.1 textstat==0.7.3 tiktoken==0.5.1 evaluate==0.4.1 langchain==0.1.5 databricks-vectorsearch==0.22 transformers==4.30.2 torch==2.0.1 cloudpickle==2.2.1 pydantic==2.5.2
+
+dbutils.library.restartPython()
 
 # COMMAND ----------
 
@@ -58,43 +59,7 @@ init_experiment_for_batch("chatbot-rag-llm-advanced", "simple")
 
 # COMMAND ----------
 
-from mlflow.deployments import get_deploy_client
-deploy_client = get_deploy_client("databricks")
-
-try:
-    endpoint_name  = "dbdemos-azure-openai"
-    deploy_client.create_endpoint(
-        name=endpoint_name,
-        config={
-            "served_entities": [
-                {
-                    "name": endpoint_name,
-                    "external_model": {
-                        "name": "gpt-35-turbo",
-                        "provider": "openai",
-                        "task": "llm/v1/chat",
-                        "openai_config": {
-                            "openai_api_type": "azure",
-                            "openai_api_key": "{{secrets/dbdemos/azure-openai}}", #Replace with your own azure open ai key
-                            "openai_deployment_name": "dbdemo-gpt35",
-                            "openai_api_base": "https://dbdemos-open-ai.openai.azure.com/",
-                            "openai_api_version": "2023-05-15"
-                        }
-                    }
-                }
-            ]
-        }
-    )
-except Exception as e:
-    if 'RESOURCE_ALREADY_EXISTS' in str(e):
-        print('Endpoint already exists')
-    else:
-        print(f"Couldn't create the external endpoint with Azure OpenAI: {e}. Will fallback to llama2-70-B as judge. Consider using a stronger model as a judge.")
-        endpoint_name = "databricks-llama-2-70b-chat"
-
-#Let's query our external model endpoint
-answer_test = deploy_client.predict(endpoint=endpoint_name, inputs={"messages": [{"role": "user", "content": "What is Apache Spark?"}]})
-answer_test['choices'][0]['message']['content']
+endpoint_name = LLM_ENDPOINT
 
 # COMMAND ----------
 
@@ -134,7 +99,7 @@ display(spark.table('evaluation_dataset'))
 # COMMAND ----------
 
 import mlflow
-os.environ['DATABRICKS_TOKEN'] = dbutils.secrets.get("dbdemos", "rag_sp_token")
+os.environ['DATABRICKS_TOKEN'] = dbutils.secrets.get(SECRET_SCOPE, SECRET_NAME)
 model_name = f"{catalog}.{db}.dbdemos_advanced_chatbot_model"
 model_version_to_evaluate = get_latest_model_version(model_name)
 mlflow.set_registry_uri("databricks-uc")
@@ -307,3 +272,7 @@ client.set_registered_model_alias(name=model_name, alias="prod", version=model_v
 # MAGIC ### Next: Deploy our model as Model Serving Endpoint with Inference Tables and deploy LLM metric monitoring (live monitoring)
 # MAGIC
 # MAGIC Open the [04-Deploy-Model-as-Endpoint]($./04-Deploy-Model-as-Endpoint) to deploy your model and track your endpoint payload as a Delta Table.
+
+# COMMAND ----------
+
+
