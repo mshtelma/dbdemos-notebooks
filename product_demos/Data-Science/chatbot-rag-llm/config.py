@@ -23,7 +23,7 @@ dbName = db = f"rag_chatbot_{username}"
 # COMMAND ----------
 
 EMBEDDING_ENDPOINT = "bge_large_en_v1_5"
-LLM_ENDPOINT = "mixtral_8x7b_instruct"
+LLM_ENDPOINT = "dbrx_instruct"
 
 SECRET_SCOPE = "msh"
 SECRET_NAME = "db_token"
