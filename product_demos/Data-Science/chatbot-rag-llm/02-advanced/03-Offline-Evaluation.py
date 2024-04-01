@@ -24,9 +24,8 @@
 
 # COMMAND ----------
 
-#%pip install databricks-sdk==0.12.0 mlflow==2.10.1 textstat==0.7.3 tiktoken==0.5.1 evaluate==0.4.1 langchain==0.1.5 databricks-vectorsearch==0.22 transformers==4.30.2 torch==2.0.1 cloudpickle==2.2.1 pydantic==2.5.2
-
-dbutils.library.restartPython()
+# MAGIC %pip install databricks-sdk==0.12.0 mlflow==2.10.1 textstat==0.7.3 tiktoken==0.5.1 evaluate==0.4.1 langchain==0.1.5 databricks-vectorsearch==0.22 transformers==4.30.2 torch==2.0.1 cloudpickle==2.2.1 pydantic==2.5.2 SQLAlchemy==2.0.29 
+# MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
 
@@ -53,13 +52,16 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
-#dbdemos__delete_this_cell
-#force the experiment to the field demos one. Required to launch as a batch
-init_experiment_for_batch("chatbot-rag-llm-advanced", "simple")
+endpoint_name = "dbrx_instruct"
 
 # COMMAND ----------
 
-endpoint_name = LLM_ENDPOINT
+from mlflow.deployments import get_deploy_client
+deploy_client = get_deploy_client("databricks")
+
+#Let's query our external model endpoint
+answer_test = deploy_client.predict(endpoint=endpoint_name, inputs={"messages": [{"role": "user", "content": "What is Apache Spark?"}]})
+answer_test['choices'][0]['message']['content']
 
 # COMMAND ----------
 

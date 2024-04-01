@@ -9,11 +9,6 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install mlflow[databricks]==2.11.3 langchain==0.1.13 databricks-vectorsearch==0.25 databricks-sdk==0.23.0 SQLAlchemy==2.0.29 pydantic==2.6.4 lxml==5.1.0
-# MAGIC dbutils.library.restartPython()
-
-# COMMAND ----------
-
 # MAGIC %run ../config
 
 # COMMAND ----------
